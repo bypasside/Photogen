@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Photogen</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- icon sprite -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-hand" viewBox="0 0 24 24"><path d="M18 11V6a2 2 0 0 0-4 0v5M14 10V4a2 2 0 0 0-4 0v6M10 10.5V6a2 2 0 0 0-4 0v8a8 8 0 0 0 16 0v-2a2 2 0 0 0-4 0"/></symbol>
+    <symbol id="i-crop" viewBox="0 0 24 24"><path d="M6 2v14a2 2 0 0 0 2 2h14M18 22V8a2 2 0 0 0-2-2H2"/></symbol>
+    <symbol id="i-brush" viewBox="0 0 24 24"><path d="M9.06 11.9l8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08M7.07 14.94c-1.66 0-3 1.35-3 3.02 0 1.33-2.5 1.52-2 2.02 1.08 1.1 2.49 2.02 4 2.02 2.2 0 4-1.8 4-4.04a3.01 3.01 0 0 0-3-3.02z"/></symbol>
+    <symbol id="i-eraser" viewBox="0 0 24 24"><path d="M7 21l-4.3-4.3a1 1 0 0 1 0-1.4l10-10a1 1 0 0 1 1.4 0l5.6 5.6a1 1 0 0 1 0 1.4L11 21M22 21H7M5 11l9 9"/></symbol>
+    <symbol id="i-type" viewBox="0 0 24 24"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></symbol>
+    <symbol id="i-shapes" viewBox="0 0 24 24"><rect x="3" y="3" width="11" height="11" rx="1"/><circle cx="16.5" cy="16.5" r="4.5"/></symbol>
+    <symbol id="i-pipette" viewBox="0 0 24 24"><path d="M2 22l1-1h3l9-9M3 21v-3l9-9M15 6l3.4-3.4a2.1 2.1 0 1 1 3 3L18 9l.4.4a2.1 2.1 0 1 1-3 3l-3.8-3.8a2.1 2.1 0 1 1 3-3l.4.4z"/></symbol>
+    <symbol id="i-rotl" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8M3 3v5h5"/></symbol>
+    <symbol id="i-rotr" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8M21 3v5h-5"/></symbol>
+    <symbol id="i-fliph" viewBox="0 0 24 24"><path d="M12 3v18M8 7l-5 5 5 5zM16 7l5 5-5 5z"/></symbol>
+    <symbol id="i-flipv" viewBox="0 0 24 24"><path d="M3 12h18M7 8l5-5 5 5zM7 16l5 5 5-5z"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9l-.8-1.2A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2z"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></symbol>
+    <symbol id="i-redo" viewBox="0 0 24 24"><path d="M15 14l5-5-5-5M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></symbol>
+    <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+    <symbol id="i-fit" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></symbol>
+    <symbol id="i-compare" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M16 13H8M16 17H8"/></symbol>
+    <symbol id="i-code" viewBox="0 0 24 24"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></symbol>
+    <symbol id="i-terminal" viewBox="0 0 24 24"><path d="M4 17l6-6-6-6M12 19h8"/></symbol>
+    <symbol id="i-pen" viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7zM18 13l-1.5-7.5L2 2l3.5 14.5L13 18zM2 2l7.6 7.6"/><circle cx="11" cy="11" r="2"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-sq" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="1"/></symbol>
+    <symbol id="i-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></symbol>
+    <symbol id="i-line" viewBox="0 0 24 24"><path d="M5 19L19 5"/></symbol>
+    <symbol id="i-arrowd" viewBox="0 0 24 24"><path d="M5 19L19 5M10 5h9v9"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></symbol>
+  </defs>
+</svg>
+
+<header class="topbar">
+  <div class="brand">PHOTOGEN</div>
+  <nav class="tabs">
+    <button class="tab active" data-tab="editor">Редактор</button>
+    <button class="tab" data-tab="ascii">ASCII</button>
+  </nav>
+  <div class="top-actions">
+    <button id="btnOpen" class="ib" data-tip="Открыть  Ctrl+O"><svg><use href="#i-folder"/></svg></button>
+    <button id="btnUndo" class="ib" data-tip="Отменить  Ctrl+Z" disabled><svg><use href="#i-undo"/></svg></button>
+    <button id="btnRedo" class="ib" data-tip="Повторить  Ctrl+Y" disabled><svg><use href="#i-redo"/></svg></button>
+    <div class="pop-wrap">
+      <button id="btnExport" class="btn solid" disabled><svg><use href="#i-download"/></svg>Экспорт</button>
+      <div class="popover" id="exportPop" hidden>
+        <div class="seg" id="exportFmt">
+          <button class="active" data-v="image/png">PNG</button>
+          <button data-v="image/jpeg">JPG</button>
+          <button data-v="image/webp">WEBP</button>
+        </div>
+        <label class="slider" id="exportQWrap" hidden><span>Качество <b id="exportQV">92</b></span><input type="range" id="exportQ" min="40" max="100" value="92"></label>
+        <button class="btn solid wide" id="exportBtn">Сохранить</button>
+      </div>
+    </div>
+  </div>
+  <input type="file" id="fileInput" accept="image/*" hidden>
+</header>
+
+<!-- ================= EDITOR ================= -->
+<main id="view-editor" class="view active">
+  <aside class="toolbar">
+    <button class="tl active" data-tool="none" data-tip="Рука  H"><svg><use href="#i-hand"/></svg></button>
+    <button class="tl" data-tool="crop" data-tip="Рамка  C"><svg><use href="#i-crop"/></svg></button>
+    <button class="tl" data-tool="brush" data-tip="Кисть  B"><svg><use href="#i-brush"/></svg></button>
+    <button class="tl" data-tool="eraser" data-tip="Ластик  E"><svg><use href="#i-eraser"/></svg></button>
+    <button class="tl" data-tool="shape" data-tip="Фигуры  U"><svg><use href="#i-shapes"/></svg></button>
+    <button class="tl" data-tool="text" data-tip="Текст  T"><svg><use href="#i-type"/></svg></button>
+    <button class="tl" data-tool="eyedropper" data-tip="Пипетка  I"><svg><use href="#i-pipette"/></svg></button>
+    <div class="sep"></div>
+    <button class="tl" data-action="rotL" data-tip="Повернуть влево"><svg><use href="#i-rotl"/></svg></button>
+    <button class="tl" data-action="rotR" data-tip="Повернуть вправо"><svg><use href="#i-rotr"/></svg></button>
+    <button class="tl" data-action="flipH" data-tip="Отразить по горизонтали"><svg><use href="#i-fliph"/></svg></button>
+    <button class="tl" data-action="flipV" data-tip="Отразить по вертикали"><svg><use href="#i-flipv"/></svg></button>
+    <div class="grow"></div>
+    <label class="swatch" data-tip="Основной цвет"><input type="color" id="mainColor" value="#ffffff"><span id="swatchFill"></span></label>
+  </aside>
+
+  <section class="workspace">
+    <div class="optbar" id="optbar">
+      <div class="opt" data-for="none"><span class="muted">Перетаскивайте холст мышью. Колесо с Ctrl меняет масштаб.</span></div>
+      <div class="opt" data-for="brush eraser" hidden>
+        <label class="inl">Размер <input type="range" id="brushSize" min="1" max="200" value="12"><b id="brushSizeV">12</b></label>
+        <label class="inl">Непрозрачность <input type="range" id="brushOp" min="5" max="100" value="100"><b id="brushOpV">100</b></label>
+      </div>
+      <div class="opt" data-for="shape" hidden>
+        <div class="seg sm" id="shapeType">
+          <button class="active" data-v="rect" data-tip="Прямоугольник"><svg><use href="#i-sq"/></svg></button>
+          <button data-v="ellipse" data-tip="Эллипс"><svg><use href="#i-circle"/></svg></button>
+          <button data-v="line" data-tip="Линия"><svg><use href="#i-line"/></svg></button>
+          <button data-v="arrow" data-tip="Стрелка"><svg><use href="#i-arrowd"/></svg></button>
+        </div>
+        <label class="inl">Толщина <input type="range" id="shapeSize" min="1" max="60" value="4"><b id="shapeSizeV">4</b></label>
+        <label class="chk"><input type="checkbox" id="shapeFill"> Заливка</label>
+        <span class="muted">Shift сохраняет пропорции</span>
+      </div>
+      <div class="opt" data-for="text" hidden>
+        <input type="text" id="textValue" class="input w180" value="Photogen" placeholder="Текст">
+        <select id="textFont" class="input">
+          <option value="Inter, 'Segoe UI', Arial, sans-serif">Гротеск</option>
+          <option value="Impact, 'Arial Black', sans-serif">Плакатный</option>
+          <option value="Georgia, 'Times New Roman', serif">Антиква</option>
+          <option value="Consolas, 'Courier New', monospace">Моноширинный</option>
+        </select>
+        <label class="inl">Размер <input type="range" id="textSize" min="8" max="400" value="64"><b id="textSizeV">64</b></label>
+        <label class="chk"><input type="checkbox" id="textBold" checked> Жирный</label>
+        <span class="muted">Клик по холсту ставит текст</span>
+      </div>
+      <div class="opt" data-for="crop" hidden>
+        <div class="seg sm" id="cropRatios">
+          <button class="active" data-r="free">Свободно</button>
+          <button data-r="1">1:1</button>
+          <button data-r="1.3333">4:3</button>
+          <button data-r="1.7778">16:9</button>
+          <button data-r="0.8">4:5</button>
+          <button data-r="0.5625">9:16</button>
+        </div>
+        <button class="btn solid" id="cropApply"><svg><use href="#i-check"/></svg>Применить</button>
+        <button class="btn" id="cropCancel">Отмена</button>
+      </div>
+      <div class="opt" data-for="eyedropper" hidden>
+        <span class="muted">Кликните по фото, чтобы взять цвет</span>
+        <span class="picked" id="pickedInfo"></span>
+      </div>
+    </div>
+
+    <section class="stage" id="stage">
+      <div class="stage-inner" id="stageInner">
+        <canvas id="mainCanvas" hidden></canvas>
+      </div>
+      <div class="dropzone" id="dropzone">
+        <svg class="dz-icon"><use href="#i-image"/></svg>
+        <h2>Откройте изображение</h2>
+        <p>Перетащите файл сюда, вставьте из буфера или выберите на диске</p>
+        <button class="btn solid" id="dzOpen">Выбрать файл</button>
+      </div>
+    </section>
+
+    <footer class="statusbar">
+      <span id="imgInfo" class="muted"></span>
+      <div class="grow"></div>
+      <button class="ib sm" id="btnCompare" data-tip="Удерживайте, чтобы сравнить  \"><svg><use href="#i-compare"/></svg></button>
+      <div class="vsep"></div>
+      <button class="ib sm" id="zoomOut" data-tip="Уменьшить  Ctrl+Минус"><svg><use href="#i-minus"/></svg></button>
+      <button class="zoomval" id="zoomVal" data-tip="Масштаб 100%  Ctrl+1">100%</button>
+      <button class="ib sm" id="zoomIn" data-tip="Увеличить  Ctrl+Плюс"><svg><use href="#i-plus"/></svg></button>
+      <button class="ib sm" id="zoomFit" data-tip="По размеру окна  Ctrl+0"><svg><use href="#i-fit"/></svg></button>
+    </footer>
+  </section>
+
+  <aside class="panel" id="editorPanel">
+    <section class="pane open">
+      <header class="pane-h"><span>Коррекция</span><button class="link" id="adjReset">Сбросить</button><svg class="chev"><use href="#i-chev"/></svg></header>
+      <div class="pane-b" id="adjustments"></div>
+    </section>
+
+    <section class="pane open">
+      <header class="pane-h"><span>Кривые</span><button class="link" id="curveReset">Сбросить</button><svg class="chev"><use href="#i-chev"/></svg></header>
+      <div class="pane-b">
+        <canvas id="curveCanvas" width="512" height="512"></canvas>
+        <p class="note">Клик добавляет точку, двойной клик удаляет</p>
+      </div>
+    </section>
+
+    <section class="pane open">
+      <header class="pane-h"><span>Фильтры</span><svg class="chev"><use href="#i-chev"/></svg></header>
+      <div class="pane-b"><div class="filters" id="filters"></div></div>
+    </section>
+
+    <section class="pane">
+      <header class="pane-h"><span>История</span><svg class="chev"><use href="#i-chev"/></svg></header>
+      <div class="pane-b"><ol class="history" id="history"></ol></div>
+    </section>
+
+    <section class="pane">
+      <header class="pane-h"><span>Размер изображения</span><svg class="chev"><use href="#i-chev"/></svg></header>
+      <div class="pane-b">
+        <div class="row">
+          <label class="num"><span>Ш</span><input type="number" id="resW" min="1"></label>
+          <button class="ib sm on" id="resLock" data-tip="Сохранять пропорции"><svg><use href="#i-link"/></svg></button>
+          <label class="num"><span>В</span><input type="number" id="resH" min="1"></label>
+        </div>
+        <button class="btn wide" id="resApply">Применить</button>
+      </div>
+    </section>
+
+    <section class="pane">
+      <header class="pane-h"><span>Рисунок</span><svg class="chev"><use href="#i-chev"/></svg></header>
+      <div class="pane-b">
+        <button class="btn wide" id="clearPaint"><svg><use href="#i-trash"/></svg>Очистить кисть, фигуры и текст</button>
+      </div>
+    </section>
+
+    <div class="panel-foot">
+      <button class="btn wide" id="toAscii">Создать ASCII логотип<svg><use href="#i-arrow"/></svg></button>
+    </div>
+  </aside>
+</main>
+
+<!-- ================= ASCII ================= -->
+<main id="view-ascii" class="view">
+  <aside class="panel left">
+    <section class="pane open">
+      <header class="pane-h"><span>Источник</span></header>
+      <div class="pane-b">
+        <div class="seg" id="srcSeg">
+          <button class="active" data-src="photo">Изображение</button>
+          <button data-src="text">Текст</button>
+        </div>
+        <div id="srcPhoto">
+          <p class="note" id="srcPhotoHint">Используется изображение из редактора со всеми правками.</p>
+          <button class="btn wide" id="asciiOpen"><svg><use href="#i-folder"/></svg>Открыть другое</button>
+        </div>
+        <div id="srcText" hidden>
+          <textarea id="asciiText" class="input" rows="2">PHOTOGEN</textarea>
+          <select id="asciiTextFont" class="input">
+            <option value="900 200px 'Arial Black', Impact, sans-serif">Жирный гротеск</option>
+            <option value="200px Impact, sans-serif">Плакатный</option>
+            <option value="bold 200px Georgia, serif">Антиква</option>
+            <option value="bold 200px Consolas, monospace">Моноширинный</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <section class="pane open">
+      <header class="pane-h"><span>Стиль</span></header>
+      <div class="pane-b"><div class="presets" id="asciiPresets"></div></div>
+    </section>
+
+    <section class="pane open">
+      <header class="pane-h"><span>Символы</span><svg class="chev"><use href="#i-chev"/></svg></header>
+      <div class="pane-b">
+        <label class="slider"><span>Ширина в символах <b id="aWidthV">100</b></span><input type="range" id="aWidth" min="20" max="300" value="100"></label>
+        <label class="field"><span>Набор</span>
+          <select id="aCharset" class="input">
+            <option value="standard">Стандарт</option>
+            <option value="detailed">Детальный</option>
+            <option value="blocks">Блоки</option>
+            <option value="simple">Простой</option>
+            <option value="binary">Бинарный</option>
+            <option value="dots">Брайль</option>
+            <option value="lines">Линии</option>
+            <option value="hacker">Терминал</option>
+            <option value="custom">Свой набор</option>
+          </select>
+        </label>
+        <input type="text" id="aCustom" class="input" placeholder="Символы от светлого к тёмному" value=" .*#" hidden>
+        <label class="chk"><input type="checkbox" id="aInvert"> Инвертировать</label>
+        <label class="chk"><input type="checkbox" id="aRemoveBg" checked> Убрать фон</label>
+        <label class="slider sub" id="aTolWrap"><span>Допуск фона <b id="aTolV">40</b></span><input type="range" id="aTol" min="0" max="160" value="40"></label>
+      </div>
+    </section>
+
+    <section class="pane">
+      <header class="pane-h"><span>Тон и детали</span><svg class="chev"><use href="#i-chev"/></svg></header>
+      <div class="pane-b">
+        <label class="slider"><span>Яркость <b id="aBrightV">0</b></span><input type="range" id="aBright" min="-100" max="100" value="0"></label>
+        <label class="slider"><span>Контраст <b id="aContrastV">0</b></span><input type="range" id="aContrast" min="-100" max="100" value="0"></label>
+        <label class="slider"><span>Гамма <b id="aGammaV">1.00</b></span><input type="range" id="aGamma" min="20" max="300" value="100"></label>
+        <label class="chk"><input type="checkbox" id="aDither"> Дизеринг</label>
+        <label class="chk"><input type="checkbox" id="aSharpen"> Резкость</label>
+        <label class="chk"><input type="checkbox" id="aEdges"> Только контуры</label>
+        <label class="slider sub" id="aEdgeWrap" hidden><span>Порог <b id="aEdgeV">60</b></span><input type="range" id="aEdge" min="5" max="255" value="60"></label>
+      </div>
+    </section>
+
+    <section class="pane open">
+      <header class="pane-h"><span>Цвет и шрифт</span><svg class="chev"><use href="#i-chev"/></svg></header>
+      <div class="pane-b">
+        <label class="field"><span>Окраска</span>
+          <select id="aColorMode" class="input">
+            <option value="mono">Один цвет</option>
+            <option value="original">Цвета изображения</option>
+            <option value="gradient">Градиент</option>
+            <option value="rainbow">Спектр</option>
+          </select>
+        </label>
+        <div class="colors">
+          <label class="cpick"><input type="color" id="aFg" value="#ffffff"><span>Символы</span></label>
+          <label class="cpick" id="aFg2Wrap"><input type="color" id="aFg2" value="#7a7a7a"><span>Второй</span></label>
+          <label class="cpick"><input type="color" id="aBg" value="#000000"><span>Фон</span></label>
+        </div>
+        <label class="chk"><input type="checkbox" id="aTransparent"> Прозрачный фон</label>
+        <label class="slider"><span>Размер шрифта <b id="aFontV">10</b></span><input type="range" id="aFont" min="4" max="32" value="10"></label>
+        <label class="slider"><span>Свечение <b id="aGlowV">0</b></span><input type="range" id="aGlow" min="0" max="20" value="0"></label>
+      </div>
+    </section>
+  </aside>
+
+  <section class="workspace">
+    <div class="optbar">
+      <div class="seg sm" id="viewSeg">
+        <button class="active" data-v="image">Изображение</button>
+        <button data-v="text">Текст</button>
+      </div>
+      <span class="muted" id="asciiInfo"></span>
+      <div class="grow"></div>
+      <label class="inl">Масштаб <input type="range" id="aZoom" min="10" max="300" value="100"><b id="aZoomV">100%</b></label>
+    </div>
+    <div class="stage ascii-stage" id="asciiScroll">
+      <div class="stage-inner">
+        <canvas id="asciiCanvas"></canvas>
+        <pre id="asciiPre" hidden></pre>
+      </div>
+      <div class="dropzone" id="asciiEmpty" hidden>
+        <svg class="dz-icon"><use href="#i-image"/></svg>
+        <h2>Нет изображения</h2>
+        <p>Откройте файл или выберите источник «Текст»</p>
+        <button class="btn solid" id="asciiEmptyOpen">Выбрать файл</button>
+      </div>
+    </div>
+  </section>
+
+  <aside class="panel">
+    <section class="pane open">
+      <header class="pane-h"><span>Экспорт</span></header>
+      <div class="pane-b list">
+        <button class="btn wide solid" id="exCopy"><svg><use href="#i-copy"/></svg>Копировать текст</button>
+        <button class="row-btn" id="exPng"><svg><use href="#i-image"/></svg><span>PNG</span><em>растр, x2</em></button>
+        <button class="row-btn" id="exSvg"><svg><use href="#i-pen"/></svg><span>SVG</span><em>вектор</em></button>
+        <button class="row-btn" id="exHtml"><svg><use href="#i-code"/></svg><span>HTML</span><em>веб страница</em></button>
+        <button class="row-btn" id="exTxt"><svg><use href="#i-file"/></svg><span>TXT</span><em>простой текст</em></button>
+        <button class="row-btn" id="exAnsi"><svg><use href="#i-terminal"/></svg><span>ANSI</span><em>для терминала</em></button>
+      </div>
+    </section>
+    <div class="panel-foot">
+      <button class="btn wide" id="exToEditor">Открыть в редакторе</button>
+    </div>
+  </aside>
+</main>
+
+<div class="drop-overlay" id="dropOverlay"><span>Отпустите файл</span></div>
+<div class="tooltip" id="tooltip"></div>
+<div class="toast" id="toast"></div>
+
+<script src="js/editor.js"></script>
+<script src="js/ascii.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

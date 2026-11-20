@@ -1,0 +1,6 @@
+# build output (dotnet publish host -c Release -o dist)
+host/bin/
+host/obj/
+dist/
+*.user
+.vs/
