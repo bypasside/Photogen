@@ -45,6 +45,11 @@
     <symbol id="i-line" viewBox="0 0 24 24"><path d="M5 19L19 5"/></symbol>
     <symbol id="i-arrowd" viewBox="0 0 24 24"><path d="M5 19L19 5M10 5h9v9"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></symbol>
+    <symbol id="i-prev" viewBox="0 0 24 24"><path d="M18 19L9 12l9-7zM6 5v14"/></symbol>
+    <symbol id="i-next" viewBox="0 0 24 24"><path d="M6 5l9 7-9 7zM18 5v14"/></symbol>
+    <symbol id="i-film" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M7 3v18M17 3v18M2 12h20M2 7.5h5M2 16.5h5M17 7.5h5M17 16.5h5"/></symbol>
     <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></symbol>
   </defs>
 </svg>
@@ -54,12 +59,13 @@
   <nav class="tabs">
     <button class="tab active" data-tab="editor">Редактор</button>
     <button class="tab" data-tab="ascii">ASCII</button>
+    <button class="tab" data-tab="gif">GIF</button>
   </nav>
   <div class="top-actions">
     <button id="btnOpen" class="ib" data-tip="Открыть  Ctrl+O"><svg><use href="#i-folder"/></svg></button>
     <button id="btnUndo" class="ib" data-tip="Отменить  Ctrl+Z" disabled><svg><use href="#i-undo"/></svg></button>
     <button id="btnRedo" class="ib" data-tip="Повторить  Ctrl+Y" disabled><svg><use href="#i-redo"/></svg></button>
-    <div class="pop-wrap">
+    <div class="pop-wrap" id="exportWrap">
       <button id="btnExport" class="btn solid" disabled><svg><use href="#i-download"/></svg>Экспорт</button>
       <div class="popover" id="exportPop" hidden>
         <div class="seg" id="exportFmt">
@@ -348,12 +354,110 @@
   </aside>
 </main>
 
+<!-- ================= GIF ================= -->
+<main id="view-gif" class="view">
+  <aside class="panel left">
+    <section class="pane open">
+      <header class="pane-h"><span>Источник</span></header>
+      <div class="pane-b">
+        <button class="btn wide" id="gifOpen"><svg><use href="#i-folder"/></svg>Открыть GIF</button>
+        <p class="note" id="gifSrcInfo">Анимация не открыта.</p>
+      </div>
+    </section>
+
+    <section class="pane open">
+      <header class="pane-h"><span>Режим</span></header>
+      <div class="pane-b">
+        <div class="seg" id="gifMode">
+          <button class="active" data-v="anim">Анимация</button>
+          <button data-v="ascii">ASCII</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="pane open">
+      <header class="pane-h"><span>Воспроизведение</span><svg class="chev"><use href="#i-chev"/></svg></header>
+      <div class="pane-b">
+        <label class="slider"><span>Скорость <b id="gifSpeedV">1.00x</b></span><input type="range" id="gifSpeed" min="25" max="400" step="25" value="100"></label>
+        <div class="seg" id="gifDir">
+          <button class="active" data-v="fwd">Вперёд</button>
+          <button data-v="rev">Назад</button>
+          <button data-v="pingpong">Маятник</button>
+        </div>
+        <label class="slider"><span>Первый кадр <b id="gifTrimAV">1</b></span><input type="range" id="gifTrimA" min="1" max="1" value="1"></label>
+        <label class="slider"><span>Последний кадр <b id="gifTrimBV">1</b></span><input type="range" id="gifTrimB" min="1" max="1" value="1"></label>
+        <label class="chk"><input type="checkbox" id="gifLoop" checked> Повторять бесконечно</label>
+      </div>
+    </section>
+
+    <section class="pane open" id="gifAnimPane">
+      <header class="pane-h"><span>Кадр</span><svg class="chev"><use href="#i-chev"/></svg></header>
+      <div class="pane-b">
+        <label class="slider"><span>Ширина <b id="gifWidthV">0 px</b></span><input type="range" id="gifWidth" min="32" max="1024" value="480"></label>
+        <label class="slider"><span>Цветов в палитре <b id="gifColorsV">256</b></span><input type="range" id="gifColors" min="8" max="256" step="8" value="256"></label>
+        <label class="chk"><input type="checkbox" id="gifDither"> Дизеринг</label>
+      </div>
+    </section>
+
+    <section class="pane open" id="gifAsciiPane" hidden>
+      <header class="pane-h"><span>ASCII</span><svg class="chev"><use href="#i-chev"/></svg></header>
+      <div class="pane-b">
+        <label class="slider"><span>Ширина в символах <b id="gifColsV">80</b></span><input type="range" id="gifCols" min="20" max="200" value="80"></label>
+        <label class="slider"><span>Размер шрифта <b id="gifFontV">10</b></span><input type="range" id="gifFont" min="4" max="20" value="10"></label>
+        <div class="presets" id="gifPresets"></div>
+        <p class="note">Набор символов, цвета, фон и тон берутся из вкладки ASCII.</p>
+      </div>
+    </section>
+  </aside>
+
+  <section class="workspace">
+    <div class="optbar">
+      <button class="ib sm" id="gifPrev" data-tip="Предыдущий кадр  ,"><svg><use href="#i-prev"/></svg></button>
+      <button class="ib" id="gifPlay" data-tip="Пуск и пауза  Пробел"><svg><use href="#i-pause"/></svg></button>
+      <button class="ib sm" id="gifNext" data-tip="Следующий кадр  ."><svg><use href="#i-next"/></svg></button>
+      <span class="muted mono" id="gifCounter"></span>
+      <div class="grow"></div>
+      <span class="muted" id="gifOutInfo"></span>
+    </div>
+    <div class="stage gif-stage" id="gifStage">
+      <canvas id="gifCanvas" hidden></canvas>
+      <div class="dropzone" id="gifEmpty">
+        <svg class="dz-icon"><use href="#i-film"/></svg>
+        <h2>Откройте GIF</h2>
+        <p>Перетащите анимацию сюда или выберите файл на диске</p>
+        <button class="btn solid" id="gifEmptyOpen">Выбрать GIF</button>
+      </div>
+    </div>
+    <footer class="statusbar timeline">
+      <input type="range" id="gifScrub" min="0" max="0" value="0">
+    </footer>
+  </section>
+
+  <aside class="panel">
+    <section class="pane open">
+      <header class="pane-h"><span>Экспорт</span></header>
+      <div class="pane-b list">
+        <button class="btn wide solid" id="gifExport"><svg><use href="#i-download"/></svg><span>Сохранить GIF</span></button>
+        <div class="progress" id="gifProgress" hidden><i></i></div>
+        <button class="row-btn" id="gifExPng"><svg><use href="#i-image"/></svg><span>PNG</span><em>текущий кадр</em></button>
+        <button class="row-btn" id="gifExTxt" hidden><svg><use href="#i-file"/></svg><span>TXT</span><em>все кадры текстом</em></button>
+      </div>
+    </section>
+    <div class="panel-foot">
+      <button class="btn wide" id="gifToEditor">Кадр в редактор</button>
+    </div>
+  </aside>
+</main>
+
+<input type="file" id="gifInput" accept="image/gif" hidden>
+
 <div class="drop-overlay" id="dropOverlay"><span>Отпустите файл</span></div>
 <div class="tooltip" id="tooltip"></div>
 <div class="toast" id="toast"></div>
 
 <script src="js/editor.js"></script>
 <script src="js/ascii.js"></script>
+<script src="js/gif.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

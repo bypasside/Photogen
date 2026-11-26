@@ -120,7 +120,10 @@
     currentTab = name;
     $$('.tab').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
     $$('.view').forEach((v) => v.classList.toggle('active', v.id === 'view-' + name));
+    // undo, redo and photo export belong to the editor only
+    ['exportWrap', 'btnUndo', 'btnRedo'].forEach((id) => { $(id).hidden = name !== 'editor'; });
     if (name === 'ascii') scheduleAscii();
+    else if (name === 'gif') gifOnShow();
     else wait(applyZoom);
   }
   $$('.tab').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
@@ -138,10 +141,12 @@
 
   async function openFile(file) {
     if (!file || !file.type.startsWith('image/')) { toast('Это не изображение'); return; }
+    if (file.type === 'image/gif' && await openGif(file)) return;
     try {
       const img = await loadImageFromFile(file);
       baseName = (file.name || 'image').replace(/\.[^.]+$/, '') || 'image';
       setImage(img);
+      if (currentTab === 'gif') showTab('editor');
     } catch {
       toast('Не удалось открыть файл');
     }
@@ -652,11 +657,17 @@
       if (e.code === 'KeyZ' && !e.shiftKey) { e.preventDefault(); ed.undo(); afterHistory(); }
       else if (e.code === 'KeyY' || (e.code === 'KeyZ' && e.shiftKey)) { e.preventDefault(); ed.redo(); afterHistory(); }
       else if (e.code === 'KeyO') { e.preventDefault(); openDialog(); }
-      else if (e.code === 'KeyS') { e.preventDefault(); currentTab === 'ascii' ? exportAsciiPng() : exportPhoto(); }
+      else if (e.code === 'KeyS') { e.preventDefault(); currentTab === 'ascii' ? exportAsciiPng() : currentTab === 'gif' ? gifExport() : exportPhoto(); }
       else if (currentTab === 'editor' && (k === '=' || k === '+')) { e.preventDefault(); stepZoom(1); }
       else if (currentTab === 'editor' && k === '-') { e.preventDefault(); stepZoom(-1); }
       else if (currentTab === 'editor' && k === '0') { e.preventDefault(); zoomFit = true; applyZoom(); }
       else if (currentTab === 'editor' && k === '1') { e.preventDefault(); setZoom(1); }
+      return;
+    }
+    if (!typing && currentTab === 'gif') {
+      if (e.code === 'Space') { e.preventDefault(); gifTogglePlay(); }
+      else if (e.key === ',' || e.key === 'ArrowLeft') { e.preventDefault(); gifStep(-1); }
+      else if (e.key === '.' || e.key === 'ArrowRight') { e.preventDefault(); gifStep(1); }
       return;
     }
     if (typing || currentTab !== 'editor' || !ed.hasImage()) return;
@@ -791,25 +802,28 @@
     { name: 'Блоки', dot: '#bbbbbb', set: { aCharset: 'blocks', aColorMode: 'mono', aFg: '#e6e6e6', aBg: '#000000', aGlow: 0, aInvert: true } },
     { name: 'Брайль', dot: '#888888', set: { aCharset: 'dots', aColorMode: 'mono', aFg: '#ffffff', aBg: '#000000', aGlow: 0, aInvert: true } },
   ];
-  const presetBox = $('asciiPresets');
-  function clearPresetMark() { $$('.preset', presetBox).forEach((p) => p.classList.remove('active')); }
-  PRESETS.forEach((p, idx) => {
+  // the same style chips appear in the ASCII tab and in the GIF tab (ASCII mode)
+  const presetBoxes = [$('asciiPresets'), $('gifPresets')];
+  function clearPresetMark() { presetBoxes.forEach((box) => $$('.preset', box).forEach((p) => p.classList.remove('active'))); }
+  function applyPreset(idx) {
+    for (const [id, v] of Object.entries(PRESETS[idx].set)) {
+      const el = $(id);
+      if (el.type === 'checkbox') el.checked = v; else el.value = v;
+      const out = $(id + 'V');
+      if (out) out.textContent = v;
+    }
+    clearPresetMark();
+    presetBoxes.forEach((box) => $$('.preset', box)[idx].classList.add('active'));
+    scheduleAscii();
+    gifRefresh();
+  }
+  presetBoxes.forEach((box) => PRESETS.forEach((p, idx) => {
     const b = document.createElement('button');
     b.className = 'preset' + (idx === 0 ? ' active' : '');
     b.innerHTML = `<i style="background:${p.dot}"></i>${p.name}`;
-    b.addEventListener('click', () => {
-      for (const [id, v] of Object.entries(p.set)) {
-        const el = $(id);
-        if (el.type === 'checkbox') el.checked = v; else el.value = v;
-        const out = $(id + 'V');
-        if (out) out.textContent = v;
-      }
-      clearPresetMark();
-      b.classList.add('active');
-      scheduleAscii();
-    });
-    presetBox.appendChild(b);
-  });
+    b.addEventListener('click', () => applyPreset(idx));
+    box.appendChild(b);
+  }));
   // apply the default preset values to the controls
   $('aInvert').checked = true;
 
@@ -832,6 +846,300 @@
     if (!need()) return;
     baseName = asciiName();
     setImage(renderHiRes());
+    showTab('editor');
+  });
+
+  // ============================================================ GIF
+  const gifCanvas = $('gifCanvas');
+  const gctx = gifCanvas.getContext('2d');
+  const gif = {
+    frames: [],          // [{ canvas, delay }], fully composited source frames
+    width: 0, height: 0, hasAlpha: false, name: 'animation',
+    mode: 'anim',        // 'anim' | 'ascii'
+    dir: 'fwd',          // 'fwd' | 'rev' | 'pingpong'
+    speed: 1,
+    seq: [],             // playback order: indices into frames
+    pos: 0,              // position in seq
+    playing: true,
+    timer: 0,
+    asciiCache: new Map(),
+    asciiSig: '',
+    exporting: null,
+  };
+
+  const gifInput = $('gifInput');
+  ['gifOpen', 'gifEmptyOpen'].forEach((id) => $(id).addEventListener('click', (e) => { e.stopPropagation(); gifInput.click(); }));
+  $('gifEmpty').addEventListener('click', () => gifInput.click());
+  gifInput.addEventListener('change', async () => {
+    const f = gifInput.files[0];
+    gifInput.value = '';
+    if (f) await openGif(f, true);
+  });
+
+  /** Decodes a GIF into the GIF tab. Returns false (and leaves everything as is) for a still image,
+   *  unless force is set, so the editor can open single frame GIFs as ordinary pictures. */
+  async function openGif(file, force = false) {
+    let data;
+    try {
+      data = GifCodec.decode(await file.arrayBuffer());
+    } catch (err) {
+      console.warn(err);
+      if (force) toast('Не удалось прочитать GIF');
+      return false;
+    }
+    if (data.frames.length < 2 && !force) return false;
+
+    clearTimeout(gif.timer);
+    gif.width = data.width;
+    gif.height = data.height;
+    gif.frames = data.frames.map((f) => {
+      const c = document.createElement('canvas');
+      c.width = data.width;
+      c.height = data.height;
+      c.getContext('2d').putImageData(f.imageData, 0, 0);
+      return { canvas: c, delay: f.delay };
+    });
+    const a = data.frames[0].imageData.data;
+    gif.hasAlpha = false;
+    for (let i = 3; i < a.length; i += 4) if (a[i] < 128) { gif.hasAlpha = true; break; }
+    gif.name = (file.name || 'animation').replace(/\.[^.]+$/, '') || 'animation';
+    gif.asciiCache.clear();
+    gif.asciiSig = '';
+    gif.pos = 0;
+    gif.playing = true;
+    if (data.loopCount !== null && data.loopCount !== undefined) $('gifLoop').checked = data.loopCount === 0;
+
+    const n = gif.frames.length;
+    ['gifTrimA', 'gifTrimB'].forEach((id) => { $(id).max = n; });
+    $('gifTrimA').value = 1; $('gifTrimAV').textContent = 1;
+    $('gifTrimB').value = n; $('gifTrimBV').textContent = n;
+    const w = $('gifWidth');
+    w.min = Math.min(32, gif.width);
+    w.max = Math.max(gif.width, 64);
+    w.value = Math.min(gif.width, 640);
+    $('gifWidthV').textContent = w.value + ' px';
+
+    const total = gif.frames.reduce((s, f) => s + f.delay, 0);
+    $('gifSrcInfo').textContent = `${gif.name}.gif, ${gif.width} × ${gif.height}, кадров: ${n}, ${(total / 1000).toFixed(1)} с` +
+      (data.truncated ? '. Файл очень большой, загружена только часть кадров.' : '');
+    $('gifEmpty').hidden = true;
+    gifCanvas.hidden = false;
+
+    if (!ed.hasImage()) { baseName = gif.name; setImage(gif.frames[0].canvas); }
+    gifRebuildSeq();
+    showTab('gif');
+    return true;
+  }
+
+  function gifRebuildSeq() {
+    const n = gif.frames.length;
+    if (!n) { gif.seq = []; return; }
+    const a = +$('gifTrimA').value - 1, b = +$('gifTrimB').value - 1;
+    const fwd = [];
+    for (let i = a; i <= b; i++) fwd.push(i);
+    gif.seq = gif.dir === 'rev' ? fwd.slice().reverse()
+      : gif.dir === 'pingpong' ? fwd.concat(fwd.slice(1, -1).reverse())
+      : fwd;
+    gif.pos = Math.min(gif.pos, gif.seq.length - 1);
+    const sc = $('gifScrub');
+    sc.max = gif.seq.length - 1;
+    sc.value = gif.pos;
+  }
+
+  /** ASCII version of a source frame; cached until any ASCII setting changes. */
+  function gifAsciiFrame(idx) {
+    const cols = +$('gifCols').value, font = +$('gifFont').value;
+    const opts = Object.assign(readAsciiOpts(), { width: cols });
+    const style = readAsciiStyle({ fontSize: font });
+    const sig = JSON.stringify([opts, style]);
+    if (sig !== gif.asciiSig) { gif.asciiCache.clear(); gif.asciiSig = sig; }
+    let hit = gif.asciiCache.get(idx);
+    if (!hit) {
+      const res = AsciiEngine.convert(gif.frames[idx].canvas, opts);
+      const c = document.createElement('canvas');
+      AsciiEngine.render(res, c, style);
+      hit = { canvas: c, res };
+      gif.asciiCache.set(idx, hit);
+    }
+    return hit;
+  }
+
+  /** Output size of the animation mode. */
+  function gifAnimSize() {
+    const w = Math.max(1, +$('gifWidth').value);
+    return [w, Math.max(1, Math.round(gif.height * w / gif.width))];
+  }
+
+  /** A fresh canvas with the final look of one frame (used for export). */
+  function gifRenderFrame(idx) {
+    if (gif.mode === 'ascii') return gifAsciiFrame(idx).canvas;
+    const [w, h] = gifAnimSize();
+    const c = document.createElement('canvas');
+    c.width = w;
+    c.height = h;
+    const x = c.getContext('2d');
+    x.imageSmoothingQuality = 'high';
+    x.drawImage(gif.frames[idx].canvas, 0, 0, w, h);
+    return c;
+  }
+
+  function gifDraw() {
+    if (!gif.seq.length) return;
+    const idx = gif.seq[gif.pos];
+    let src, w, h;
+    if (gif.mode === 'ascii') {
+      src = gifAsciiFrame(idx).canvas;
+      w = src.width; h = src.height;
+    } else {
+      src = gif.frames[idx].canvas;
+      [w, h] = gifAnimSize();
+    }
+    if (gifCanvas.width !== w || gifCanvas.height !== h) { gifCanvas.width = w; gifCanvas.height = h; }
+    gctx.clearRect(0, 0, w, h);
+    gctx.imageSmoothingQuality = 'high';
+    gctx.drawImage(src, 0, 0, w, h);
+    $('gifCounter').textContent = `${idx + 1} / ${gif.frames.length}`;
+    $('gifScrub').value = gif.pos;
+    const dur = gif.seq.reduce((s, i) => s + gif.frames[i].delay, 0) / gif.speed;
+    $('gifOutInfo').textContent = `${w} × ${h} px, кадров: ${gif.seq.length}, ${(dur / 1000).toFixed(1)} с`;
+  }
+
+  function gifPlayIcon() {
+    $('gifPlay').querySelector('use').setAttribute('href', gif.playing ? '#i-pause' : '#i-play');
+  }
+
+  function gifSchedule() {
+    clearTimeout(gif.timer);
+    gifPlayIcon();
+    if (!gif.playing || currentTab !== 'gif' || gif.seq.length < 2) return;
+    const delay = gif.frames[gif.seq[gif.pos]].delay / gif.speed;
+    gif.timer = setTimeout(() => {
+      if (currentTab !== 'gif') return;
+      if (gif.pos >= gif.seq.length - 1 && !$('gifLoop').checked) { gif.playing = false; gifPlayIcon(); return; }
+      gif.pos = (gif.pos + 1) % gif.seq.length;
+      gifDraw();
+      gifSchedule();
+    }, Math.max(10, delay));
+  }
+
+  function gifOnShow() {
+    if (!gif.frames.length) return;
+    gifDraw();
+    gifSchedule();
+  }
+  /** Redraw after a settings change (also called by the shared ASCII style chips). */
+  function gifRefresh() {
+    if (currentTab === 'gif' && gif.frames.length) gifDraw();
+  }
+  function gifTogglePlay() {
+    if (!gif.frames.length) return;
+    if (!gif.playing && gif.pos >= gif.seq.length - 1) gif.pos = 0;
+    gif.playing = !gif.playing;
+    gifDraw();
+    gifSchedule();
+  }
+  function gifStep(d) {
+    if (!gif.seq.length) return;
+    gif.playing = false;
+    gif.pos = (gif.pos + d + gif.seq.length) % gif.seq.length;
+    gifDraw();
+    gifSchedule();
+  }
+  $('gifPlay').addEventListener('click', gifTogglePlay);
+  $('gifPrev').addEventListener('click', () => gifStep(-1));
+  $('gifNext').addEventListener('click', () => gifStep(1));
+  $('gifScrub').addEventListener('input', (e) => {
+    if (!gif.seq.length) return;
+    gif.playing = false;
+    gif.pos = +e.target.value;
+    gifDraw();
+    gifSchedule();
+  });
+
+  seg('gifMode', (b) => {
+    gif.mode = b.dataset.v;
+    const ascii = gif.mode === 'ascii';
+    $('gifAnimPane').hidden = ascii;
+    $('gifAsciiPane').hidden = !ascii;
+    $('gifExTxt').hidden = !ascii;
+    gifRefresh();
+  });
+  seg('gifDir', (b) => { gif.dir = b.dataset.v; gifRebuildSeq(); gifRefresh(); gifSchedule(); });
+  bindRange('gifSpeed', (v) => { gif.speed = v / 100; gifRefresh(); gifSchedule(); }, (v) => (v / 100).toFixed(2) + 'x');
+  bindRange('gifTrimA', (v) => {
+    if (v > +$('gifTrimB').value) { $('gifTrimB').value = v; $('gifTrimBV').textContent = v; }
+    gifRebuildSeq(); gifRefresh();
+  });
+  bindRange('gifTrimB', (v) => {
+    if (v < +$('gifTrimA').value) { $('gifTrimA').value = v; $('gifTrimAV').textContent = v; }
+    gifRebuildSeq(); gifRefresh();
+  });
+  bindRange('gifWidth', gifRefresh, (v) => v + ' px');
+  bindRange('gifColors', () => {});
+  bindRange('gifCols', gifRefresh);
+  bindRange('gifFont', gifRefresh);
+  $('gifLoop').addEventListener('input', gifSchedule);
+
+  async function gifExport() {
+    if (!gif.frames.length) { toast('Сначала откройте GIF'); return; }
+    if (gif.exporting) { gif.exporting.abort(); return; }
+    const ac = new AbortController();
+    gif.exporting = ac;
+    const btn = $('gifExport'), label = btn.querySelector('span'), bar = $('gifProgress'), fill = bar.querySelector('i');
+    btn.classList.add('busy');
+    label.textContent = 'Отменить';
+    bar.hidden = false;
+    fill.style.width = '0%';
+    try {
+      const ascii = gif.mode === 'ascii';
+      const frames = [];
+      for (let i = 0; i < gif.seq.length; i++) {
+        if (ac.signal.aborted) throw new DOMException('aborted', 'AbortError');
+        const idx = gif.seq[i];
+        frames.push({ image: gifRenderFrame(idx), delay: gif.frames[idx].delay / gif.speed });
+        fill.style.width = ((i + 1) / gif.seq.length) * 40 + '%';
+        if (i % 3 === 2) await new Promise((r) => setTimeout(r, 0));
+      }
+      const style = readAsciiStyle();
+      const blob = await GifCodec.encode(frames, {
+        loop: $('gifLoop').checked ? 0 : -1,
+        colors: ascii ? 256 : +$('gifColors').value,
+        dither: !ascii && $('gifDither').checked,
+        globalPalette: ascii && style.colorMode !== 'original',
+        transparent: ascii ? style.transparentBg : gif.hasAlpha,
+        optimize: true,
+        signal: ac.signal,
+        onProgress: (f) => { fill.style.width = 40 + f * 60 + '%'; },
+      });
+      await saveBlob(blob, `${gif.name}_${ascii ? 'ascii' : 'edit'}.gif`);
+    } catch (err) {
+      if (err && err.name === 'AbortError') toast('Сохранение отменено');
+      else { console.error(err); toast('Не удалось сохранить GIF'); }
+    } finally {
+      gif.exporting = null;
+      btn.classList.remove('busy');
+      label.textContent = 'Сохранить GIF';
+      bar.hidden = true;
+    }
+  }
+  $('gifExport').addEventListener('click', gifExport);
+  $('gifExPng').addEventListener('click', () => {
+    if (!gif.frames.length) return;
+    gifCanvas.toBlob((b) => saveBlob(b, `${gif.name}_frame${gif.seq[gif.pos] + 1}.png`), 'image/png');
+  });
+  $('gifExTxt').addEventListener('click', () => {
+    if (!gif.frames.length) return;
+    const text = gif.seq.map((idx) => gifAsciiFrame(idx).res.textTrimmed ?? gifAsciiFrame(idx).res.text).join('\n\n\n');
+    saveText(text, `${gif.name}_ascii.txt`);
+  });
+  $('gifToEditor').addEventListener('click', () => {
+    if (!gif.frames.length) return;
+    const c = document.createElement('canvas');
+    c.width = gifCanvas.width;
+    c.height = gifCanvas.height;
+    c.getContext('2d').drawImage(gifCanvas, 0, 0);
+    baseName = `${gif.name}_frame${gif.seq[gif.pos] + 1}`;
+    setImage(c);
     showTab('editor');
   });
 
